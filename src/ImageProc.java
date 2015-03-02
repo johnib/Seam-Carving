@@ -21,6 +21,10 @@ public class ImageProc {
 	
 	public static BufferedImage grayScale(BufferedImage img) {
 		//TODO implement this
+        int width = img.getWidth();
+        int height = img.getHeight();
+        BufferedImage out = new BufferedImage(width, height, img.getType());
+
 		return null;
 	}
 	
