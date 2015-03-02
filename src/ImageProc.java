@@ -35,21 +35,32 @@ public class ImageProc {
         int red = px.getRed();
         int green = px.getGreen();
         int blue = px.getBlue();
-        int min = red;
-        if (green < min) min = green;
-        if (blue < min) min = blue;
-        return new Color(min, min, min).getRGB();
+        int avg = (red + green + blue) / 3;
+        return new Color(avg, avg, avg).getRGB();
     }
 	
 	public static BufferedImage horizontalDerivative(BufferedImage img) {
 		//TODO implement this
-		return null;
+        int width = img.getWidth();
+        int height = img.getHeight();
+        BufferedImage out = new BufferedImage(width, height, img.getType());
+        BufferedImage gray = grayScale(img);
+        for (int x = 0; x < width - 1; x++)
+            for (int y = 0; y < height; y++) {
+                int g = gray.getRGB(x, y) & 0xFF;
+                int g1 = gray.getRGB(x + 1, y) & 0xFF;
+                int dx = (g - g1 + 255)/2;
+                out.setRGB(x, y, new Color(dx, dx, dx).getRGB());
+            }
+		return out;
 	}
 
 	public static BufferedImage verticalDerivative(BufferedImage img) {
 		//TODO implement this
-		return null;
+        BufferedImage out = horizontalDerivative(rotateLeft(img));
+        return rotateRight(out);
 	}
+
 	public static BufferedImage gradientMagnitude(BufferedImage img) {
 		//TODO implement this
 		return null;
@@ -66,7 +77,28 @@ public class ImageProc {
 		return null;
 		
 	}
-	
+
+    // rotates the picture 90 degrees left.
+    private static BufferedImage rotateLeft(BufferedImage img) {
+        return rotate(img, 1);
+    }
+
+    // rotates the picture 90 degrees right.
+    private static BufferedImage rotateRight(BufferedImage img) {
+        return rotate(img, 0);
+    }
+
+    // rotates 90 deg left of @left == 1 and 90 deg right of @left == 0, otherwise returns the img as is.
+    private static BufferedImage rotate(BufferedImage img, int left) {
+        if (left != 0 && left != 1) return img;
+        int width = img.getWidth();
+        int height= img.getHeight();
+        BufferedImage out = new BufferedImage(height, width, img.getType());
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                out.setRGB((left == 1) ? y : height - y - 1, (left == 1) ? width - x - 1 : x, img.getRGB(x, y));
+        return out;
+    }
 }
 		
 	
