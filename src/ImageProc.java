@@ -20,13 +20,26 @@ public class ImageProc {
 	}
 	
 	public static BufferedImage grayScale(BufferedImage img) {
-		//TODO implement this
         int width = img.getWidth();
         int height = img.getHeight();
         BufferedImage out = new BufferedImage(width, height, img.getType());
-
-		return null;
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                out.setRGB(x, y, getGray(img.getRGB(x, y)));
+		return out;
 	}
+
+    // returns the gray color of a given pixel's RGB value.
+    private static int getGray(int rgb) {
+        Color px = new Color(rgb);
+        int red = px.getRed();
+        int green = px.getGreen();
+        int blue = px.getBlue();
+        int min = red;
+        if (green < min) min = green;
+        if (blue < min) min = blue;
+        return new Color(min, min, min).getRGB();
+    }
 	
 	public static BufferedImage horizontalDerivative(BufferedImage img) {
 		//TODO implement this
