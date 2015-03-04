@@ -21,7 +21,6 @@ public class Retargeter {
 		return null;
 	}
 
-
 	private void calculateSeamsOrderMatrix() {
 		//TODO implement this - this calculates the order in which seams are extracted
 
@@ -31,7 +30,5 @@ public class Retargeter {
 		//TODO implement this - cost matrix should be calculated for a given image width w
 		// 	   to be used inside calculateSeamsOrderMatrix()
 	}
-
-	
 
 }

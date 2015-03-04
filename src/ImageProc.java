@@ -37,33 +37,53 @@ public class ImageProc {
     }
 
     public static BufferedImage horizontalDerivative(BufferedImage img) {
-        //TODO implement this
-        int width = img.getWidth();
-        int height = img.getHeight();
-        BufferedImage out = new BufferedImage(width, height, img.getType());
-        BufferedImage gray = grayScale(img);
-
-        for (int x = 1; x < width - 1; x++)
-            for (int y = 0; y < height; y++) { // calc dx as discretely as defined.
-                int dx = ((gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF) + 255) / 2;
-                out.setRGB(x, y, new Color(dx, dx, dx).getRGB());
-            }
-
-        // handle the top and bottom lines.
-        for (int y = 0; y < height; y++) {
-            out.setRGB(0, y, new Color(127, 127, 127).getRGB());
-            out.setRGB(width - 1, y, new Color(127, 127, 127).getRGB());
-        }
-        return out;
+        return derivative(img, true);
     }
 
     public static BufferedImage verticalDerivative(BufferedImage img) {
-        //TODO implement this
-        return rotateRight(horizontalDerivative(rotateLeft(img)));
+        return derivative(img, false);
+    }
+
+    // this method supports both horizontal and vertical derivatives.
+    private static BufferedImage derivative(BufferedImage img, boolean horizontal) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        BufferedImage gray = grayScale(img);
+        BufferedImage out = new BufferedImage(width, height, img.getType());
+
+        // Instead of checking each iteration (w * h iterations!) if it's horizontal or vertical,
+        // I pay a few lines duplication and save A LOT of IF checking on run-time.
+        // That works faster, and thus better.
+        if (horizontal) {
+            for (int x = 1; x < width - 1; x++)
+                for (int y = 0; y < height; y++) { // calc dx as discretely as defined.
+                    int dx = ((gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF) + 255) / 2;
+                    out.setRGB(x, y, new Color(dx, dx, dx).getRGB());
+                }
+
+            // handle the sides edges of the picture
+            for (int y = 0; y < height; y++) {
+                out.setRGB(0, y, new Color(127, 127, 127).getRGB());
+                out.setRGB(width - 1, y, new Color(127, 127, 127).getRGB());
+            }
+        } else {
+            for (int x = 0; x < width; x++)
+                for (int y = 1; y < height - 1; y++) { // calc dy as discretely as defined.
+                    int dy = ((gray.getRGB(x, y - 1) & 0xFF) - (gray.getRGB(x, y + 1) & 0xFF) + 255) / 2;
+                    out.setRGB(x, y, new Color(dy, dy, dy).getRGB());
+                }
+
+            // handle the bottom/top edges of the picture
+            for (int x = 0; x < width; x++) {
+                out.setRGB(x, 0, new Color(127, 127, 127).getRGB());
+                out.setRGB(x, height - 1, new Color(127, 127, 127).getRGB());
+            }
+        }
+
+        return out;
     }
 
     public static BufferedImage gradientMagnitude(BufferedImage img) {
-        //TODO implement this
         int width = img.getWidth();
         int height = img.getHeight();
         BufferedImage out = new BufferedImage(width, height, img.getType());
@@ -79,6 +99,11 @@ public class ImageProc {
                 else
                     out.setRGB(x, y, new Color(norma, norma, norma).getRGB());
             }
+
+        for (int y = 1; y < height - 1; y++) {
+            out.setRGB(0, y, new Color(0, 0, 0).getRGB());
+            out.setRGB(width - 1, y, new Color(0, 0, 0).getRGB());
+        }
 
         return out;
     }
