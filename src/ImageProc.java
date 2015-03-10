@@ -53,7 +53,7 @@ public class ImageProc {
 
         // Instead of checking each iteration (w * h iterations!) if it's horizontal or vertical,
         // I pay a few lines duplication and save A LOT of IF checking on run-time.
-        // That works faster, and thus better.
+        // That works faster, and thus better, and of course way better than rotating.
         if (horizontal) {
             for (int x = 1; x < width - 1; x++)
                 for (int y = 0; y < height; y++) { // calc dx as discretely as defined.
