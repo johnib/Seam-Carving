@@ -37,50 +37,28 @@ public class ImageProc {
     }
 
     public static BufferedImage horizontalDerivative(BufferedImage img) {
-        return derivative(img, true);
-    }
-
-    public static BufferedImage verticalDerivative(BufferedImage img) {
-        return derivative(img, false);
-    }
-
-    // this method supports both horizontal and vertical derivatives.
-    private static BufferedImage derivative(BufferedImage img, boolean horizontal) {
         int width = img.getWidth();
         int height = img.getHeight();
-        BufferedImage gray = grayScale(img);
         BufferedImage out = new BufferedImage(width, height, img.getType());
+        BufferedImage gray = grayScale(img);
 
-        // Instead of checking each iteration (w * h iterations!) if it's horizontal or vertical,
-        // I pay a few lines duplication and save A LOT of IF checking on run-time.
-        // That works faster, and thus better, and of course way better than rotating.
-        if (horizontal) {
-            for (int x = 1; x < width - 1; x++)
-                for (int y = 0; y < height; y++) { // calc dx as discretely as defined.
-                    int dx = ((gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF) + 255) / 2;
-                    out.setRGB(x, y, new Color(dx, dx, dx).getRGB());
-                }
-
-            // handle the sides edges of the picture
-            for (int y = 0; y < height; y++) {
-                out.setRGB(0, y, new Color(127, 127, 127).getRGB());
-                out.setRGB(width - 1, y, new Color(127, 127, 127).getRGB());
+        for (int x = 1; x < width - 1; x++)
+            for (int y = 0; y < height; y++) { // calc dx as discretely as defined.
+                int dx = ((gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF) + 255) / 2;
+                out.setRGB(x, y, new Color(dx, dx, dx).getRGB());
             }
-        } else {
-            for (int x = 0; x < width; x++)
-                for (int y = 1; y < height - 1; y++) { // calc dy as discretely as defined.
-                    int dy = ((gray.getRGB(x, y - 1) & 0xFF) - (gray.getRGB(x, y + 1) & 0xFF) + 255) / 2;
-                    out.setRGB(x, y, new Color(dy, dy, dy).getRGB());
-                }
 
-            // handle the bottom/top edges of the picture
-            for (int x = 0; x < width; x++) {
-                out.setRGB(x, 0, new Color(127, 127, 127).getRGB());
-                out.setRGB(x, height - 1, new Color(127, 127, 127).getRGB());
-            }
+        // handle the sides edges of the picture
+        for (int y = 0; y < height; y++) {
+            out.setRGB(0, y, new Color(127, 127, 127).getRGB());
+            out.setRGB(width - 1, y, new Color(127, 127, 127).getRGB());
         }
 
         return out;
+    }
+
+    public static BufferedImage verticalDerivative(BufferedImage img) {
+        return transpose(horizontalDerivative(transpose(img)));
     }
 
     public static BufferedImage gradientMagnitude(BufferedImage img) {
@@ -120,23 +98,12 @@ public class ImageProc {
 
     }
 
-    private static BufferedImage rotateLeft(BufferedImage img) {
-        return rotate(img, 1);
-    }
+    private static BufferedImage transpose(BufferedImage img) {
+        BufferedImage out = new BufferedImage(img.getHeight(), img.getWidth(), img.getType());
+        for (int x = 0; x < img.getWidth(); x++)
+            for (int y = 0; y < img.getHeight(); y++)
+                out.setRGB(y, x, img.getRGB(x, y));
 
-    private static BufferedImage rotateRight(BufferedImage img) {
-        return rotate(img, 0);
-    }
-
-    // rotates 90 deg left of @left == 1 and 90 deg right of @left == 0, otherwise returns the img as is.
-    private static BufferedImage rotate(BufferedImage img, int left) {
-        if (left != 0 && left != 1) return img;
-        int width = img.getWidth();
-        int height = img.getHeight();
-        BufferedImage out = new BufferedImage(height, width, img.getType());
-        for (int x = 0; x < width; x++)
-            for (int y = 0; y < height; y++)
-                out.setRGB((left == 1) ? y : height - y - 1, (left == 1) ? width - x - 1 : x, img.getRGB(x, y));
         return out;
     }
 }
