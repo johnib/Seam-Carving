@@ -71,11 +71,8 @@ public class ImageProc {
             for (int y = 1; y < height - 1; y++) {
                 int dx = (gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF);
                 int dy = (gray.getRGB(x, y - 1) & 0xFF) - (gray.getRGB(x, y + 1) & 0xFF);
-                int norma = (int) Math.sqrt(dx * dx + dy * dy);
-                if (norma > 255)
-                    out.setRGB(x, y, new Color(255, 255, 255).getRGB());
-                else
-                    out.setRGB(x, y, new Color(norma, norma, norma).getRGB());
+                int norma = Math.min((int) Math.sqrt(dx * dx + dy * dy), 255);
+                out.setRGB(x, y, new Color(norma, norma, norma).getRGB());
             }
 
         for (int y = 1; y < height - 1; y++) {
@@ -98,7 +95,7 @@ public class ImageProc {
 
     }
 
-    private static BufferedImage transpose(BufferedImage img) {
+    static BufferedImage transpose(BufferedImage img) {
         BufferedImage out = new BufferedImage(img.getHeight(), img.getWidth(), img.getType());
         for (int x = 0; x < img.getWidth(); x++)
             for (int y = 0; y < img.getHeight(); y++)
