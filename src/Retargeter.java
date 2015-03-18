@@ -23,26 +23,22 @@ public class Retargeter {
     private final BufferedImage gray; // a copy of gray scaled image.
     private final int[][] grayArr; // non-touchable array of gray scaled values
 
-    private final BufferedImage pic; // working copy of the picture
+    private final BufferedImage origPic; // working copy of the picture
     private int[][] grayEdit; // working copy of grayArr
     private int[][] seamsMat;
     private int[][] costMat;
 
     public Retargeter(BufferedImage m_img, boolean m_isVertical) {
         //TODO do initialization and pre processing here
-
         isVertical = m_isVertical;
-        if (m_isVertical) {
-            width = m_img.getHeight();
-            height = m_img.getWidth();
-            gray = ImageProc.transpose(ImageProc.grayScale(m_img));
-        } else {
-            width = m_img.getWidth();
-            height = m_img.getHeight();
-            gray = ImageProc.grayScale(m_img);
-        }
+        if (isVertical)
+            origPic = ImageProc.transpose(m_img).getSubimage(0, 0, m_img.getHeight(), m_img.getWidth());
+        else
+            origPic = m_img.getSubimage(0, 0, m_img.getWidth(), m_img.getHeight());
 
-        pic = m_img.getSubimage(0, 0, width, height);
+        width = origPic.getWidth();
+        height = origPic.getHeight();
+        gray = ImageProc.grayScale(m_img);
         grayArr = new int[height][width];
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
@@ -57,17 +53,47 @@ public class Retargeter {
         //you can implement this (change the output type)
     }
 
+    /**
+     * This function is the actual size changer.
+     * The procedure goes like this:
+     * 1. validate input.
+     * 2. calculate Seams Order Matrix, given the new size.
+     * 3. create new BufferedImage with the new size (wider/shorter).
+     * 4. for each pixel in the original picture:
+     *  4.1 if its seamsMat value == 0 copy it to the picture.
+     *  4.2 else copy it twice and increase offset.
+     * @param newSize the wanted new width of the picture. oldSize - newSize = k seams.
+     * @return new re-sized BufferedImage
+     */
     public BufferedImage retarget(int newSize) {
         //TODO implement this
         if (newSize < 1 || newSize > 2 * width) {
             System.out.println("newSize is off limits.\nreturns original.");
-            return pic;
+            return origPic;
         }
 
-        calculateSeamsOrderMatrix(Math.abs(newSize - width));
+        int k = newSize - width;
+        calculateSeamsOrderMatrix(Math.abs(k));
 
+        // from now on i assume that SeamsOrderMatrix is valid
+        BufferedImage out = new BufferedImage(k, height, origPic.getType());
+        int offset;
+        for (int y = 0; y < height; y++) {
+            offset = 0;
+            for (int x = 0; x < width; x++) {
+                if (seamsMat[y][x] == 0) // pixel not in seam
+                    out.setRGB(x + offset, y, origPic.getRGB(x, y));
+                else {
+                    if (k > 0) {
+                        out.setRGB(x + offset++, y, origPic.getRGB(x, y));
+                        out.setRGB(x + offset, y, origPic.getRGB(x, y));
+                    } else
+                        offset--;
+                }
+            }
+        }
         // remember to return the transpose if it's vertical
-        return null;
+        return (isVertical) ? ImageProc.transpose(out) : out;
     }
 
     private void calculateSeamsOrderMatrix(int k) {
@@ -102,9 +128,10 @@ public class Retargeter {
 
     private void calculateCostsMatrix() {
         //TODO implement this - cost matrix should be calculated for a given image width w
-
+        //TODO avoid allocating memory for the costMat.
         // copy first line of grayScaled to the costMat.
         costMat = new int[height][width + 2];
+        //TODO change to gradient pixels.
         System.arraycopy(grayArr[0], 0, costMat[0], 1, width);
 
         // wrap shoulders with high value.
@@ -146,19 +173,19 @@ public class Retargeter {
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]);
     }
 
-    // gets the index of the i'th seam to be removed or duplicated.
-    private void shiftPic(int i) {
-        if (i > width || i < 1) {
-            System.out.println("shiftPic received wrong seam index.\nreturns.");
-            return;
-        }
-
-        BufferedImage out = new BufferedImage(width - 1, height, pic.getType());
-        for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++) {
-                if (seamsMat[y][x] != i) {
-                    out.setRGB(x, y, pic.getRGB(x, y));
-                }
-            }
-    }
+//    // gets the index of the i'th seam to be removed or duplicated.
+//    private void shiftPic(int i) {
+//        if (i > width || i < 1) {
+//            System.out.println("shiftPic received wrong seam index.\nreturns.");
+//            return;
+//        }
+//
+//        BufferedImage out = new BufferedImage(width - 1, height, origPic.getType());
+//        for (int y = 0; y < height; y++)
+//            for (int x = 0; x < width; x++) {
+//                if (seamsMat[y][x] != i) {
+//                    out.setRGB(x, y, origPic.getRGB(x, y));
+//                }
+//            }
+//    }
 }
