@@ -151,9 +151,9 @@ public class Retargeter {
             for (int x = 1; x <= width; x++) {
                 // assign
                 System.out.println("x: " + x + "\ty: " + y);
-                left = costMat[y - 1][x - 1] + cl(x, y);
-                mid = costMat[y - 1][x] + cv(x, y);
-                right = costMat[y - 1][x + 1] + cr(x, y);
+                left = costMat[y][x - 1] + cl(y, x - 1);
+                mid = costMat[y][x] + cv(y, x - 1);
+                right = costMat[y][x + 1] + cr(y, x - 1);
 
                 // check for minimum
                 if (left <= mid && left <= right)
@@ -167,19 +167,19 @@ public class Retargeter {
 
     // Left seam
     private int cl(int y, int x) {
-        if (x < 0 || x >= width) return Integer.MAX_VALUE;
+        if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]) + Math.abs(grayArr[y - 1][x] - grayArr[y][x - 1]);
     }
 
     // Right seam
     private int cr(int y, int x) {
-        if (x < 0 || x >= width) return Integer.MAX_VALUE;
+        if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]) + Math.abs(grayArr[y - 1][x] - grayArr[y][x + 1]);
     }
 
     // Vertical seam
     private int cv(int y, int x) {
-        if (x < 0 || x >= width) return Integer.MAX_VALUE;
+        if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]);
     }
 
