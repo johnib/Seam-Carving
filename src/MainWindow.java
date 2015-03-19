@@ -150,17 +150,17 @@ public class MainWindow extends JFrame {
 				int width = (Integer)txtRetargetWidth.getValue();
 				int height = (Integer)txtRetargetHeight.getValue();
 				BufferedImage bckupimg=MainWindow.this.img;
-				try {
+//				try {
 					BufferedImage img = ImageProc.retargetSize(MainWindow.this.img, width, height);
 					MainWindow.this.img = img;
 					present("Retarget(w=[" + width + "]) (h=[" + height + "])");
-				} catch (Exception ex) {
-					String errormsg=ex.getMessage();
-					if (errormsg==null)
-						errormsg="Error in Retargeting, check the parameters!";										
-					JOptionPane.showMessageDialog(MainWindow.this,errormsg, "Error", JOptionPane.ERROR_MESSAGE);
-					MainWindow.this.img=bckupimg;
-				}
+//				} catch (Exception ex) {
+//					String errormsg=ex.getMessage();
+//					if (errormsg==null)
+//						errormsg="Error in Retargeting, check the parameters!";
+//					JOptionPane.showMessageDialog(MainWindow.this,errormsg, "Error", JOptionPane.ERROR_MESSAGE);
+//					MainWindow.this.img=bckupimg;
+//				}
 			}
 		});
 		btnRetarget.setEnabled(false);

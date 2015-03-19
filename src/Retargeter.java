@@ -17,16 +17,20 @@ import java.awt.image.BufferedImage;
 
 public class Retargeter {
 
+    /* this is the input image, transposed if m_isVertical */
+    private final BufferedImage origPic;
+
+    /* both width and height are of the origPic */
     private final int width;
     private final int height;
-    private final boolean isVertical;
-    private final BufferedImage gray; // a copy of gray scaled image.
-    private final int[][] grayArr; // non-touchable array of gray scaled values
 
-    private final BufferedImage origPic; // working copy of the picture
-    private int[][] grayEdit; // working copy of grayArr
-    private int[][] seamsMat;
-    private int[][] costMat;
+    private final boolean isVertical;
+    private final BufferedImage gray; // gray scaled image
+    private final int[][] grayArr; // array of gray scaled values
+    private final int[][] seamsMat; // seams order matrix
+    private int[][] costMat; // cost matrix
+
+    private static int HIGH_VALUE = Integer.MAX_VALUE >> 1;
 
     public Retargeter(BufferedImage m_img, boolean m_isVertical) {
         //TODO do initialization and pre processing here
@@ -40,13 +44,28 @@ public class Retargeter {
         height = origPic.getHeight();
         gray = ImageProc.grayScale(m_img);
         grayArr = new int[height][width];
+        seamsMat = new int[height][width];
         for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
+            for (int x = 0; x < width; x++) {
                 grayArr[y][x] = gray.getRGB(x, y) & 0xFF;
+                seamsMat[y][x] = 0;
+            }
+
+        /*
+        one-time allocating space for this matrix instead of
+        reallocating k times (for k seams).
+         */
+        costMat = new int[height][width + 2];
+
+        // wrap shoulders with high value
+        for (int y = 0; y < height; y++) {
+            costMat[y][0] = HIGH_VALUE;
+            costMat[y][width + 1] = HIGH_VALUE;
+        }
     }
 
-    public void getSeamsOrderMatrix() {
-        //you can implement this (change the output type)
+    public int[][] getSeamsOrderMatrix() {
+        return seamsMat;
     }
 
     public void getOrigPosMatrix() {
@@ -66,17 +85,11 @@ public class Retargeter {
      * @return new re-sized BufferedImage
      */
     public BufferedImage retarget(int newSize) {
-        //TODO implement this
-        if (newSize < 1 || newSize > 2 * width) {
-            System.out.println("newSize is off limits.\nreturns original.");
-            return origPic;
-        }
-
         int k = newSize - width;
         calculateSeamsOrderMatrix(Math.abs(k));
 
         // from now on i assume that SeamsOrderMatrix is valid
-        BufferedImage out = new BufferedImage(k, height, origPic.getType());
+        BufferedImage out = new BufferedImage(width + k, height, origPic.getType());
         int offset;
         for (int y = 0; y < height; y++) {
             offset = 0;
@@ -84,15 +97,14 @@ public class Retargeter {
                 if (seamsMat[y][x] == 0) // pixel not in seam
                     out.setRGB(x + offset, y, origPic.getRGB(x, y));
                 else {
-                    if (k > 0) {
+                    if (k > 0) { // duplicate seam
                         out.setRGB(x + offset++, y, origPic.getRGB(x, y));
                         out.setRGB(x + offset, y, origPic.getRGB(x, y));
-                    } else
+                    } else // remove seam
                         offset--;
                 }
             }
         }
-        // remember to return the transpose if it's vertical
         return (isVertical) ? ImageProc.transpose(out) : out;
     }
 
@@ -119,57 +131,55 @@ public class Retargeter {
                 x = tempX;
 
                 // 'disable' the seam's pixels
-                grayArr[y][x] = Integer.MAX_VALUE;
+                grayArr[y][x] = HIGH_VALUE;
             }
-            seamsMat[y][x] = i;
-            grayArr[y][x] = Integer.MAX_VALUE;
+            seamsMat[y][x] = i; // do the same for the last pixel
+            grayArr[y][x] = HIGH_VALUE;
         }
     }
 
     private void calculateCostsMatrix() {
         //TODO implement this - cost matrix should be calculated for a given image width w
-        //TODO avoid allocating memory for the costMat.
-        // copy first line of grayScaled to the costMat.
-        costMat = new int[height][width + 2];
+//        //TODO avoid allocating memory for the costMat.
+//        costMat = new int[height][width + 2];
         //TODO change to gradient pixels.
+        // copy first line of grayScaled to the costMat.
         System.arraycopy(grayArr[0], 0, costMat[0], 1, width);
-
-        // wrap shoulders with high value.
-        for (int y = 0; y < height; y++) {
-            costMat[y][0] = Integer.MAX_VALUE;
-            costMat[y][width - 1] = Integer.MAX_VALUE;
-        }
 
         int left, mid, right;
         for (int y = 1; y < height; y++)
             for (int x = 1; x <= width; x++) {
                 // assign
-                left = costMat[y - 1][x - 1];
-                mid = costMat[y - 1][x];
-                right = costMat[y - 1][x + 1];
+                System.out.println("x: " + x + "\ty: " + y);
+                left = costMat[y - 1][x - 1] + cl(x, y);
+                mid = costMat[y - 1][x] + cv(x, y);
+                right = costMat[y - 1][x + 1] + cr(x, y);
 
                 // check for minimum
                 if (left <= mid && left <= right)
-                    costMat[y][x] = left + cl(x, y);
+                    costMat[y][x] = left;
                 else if (mid <= left && mid <= right)
-                    costMat[y][x] = mid + cv(x, y);
+                    costMat[y][x] = mid;
                 else
-                    costMat[y][x] = right + cr(x, y);
+                    costMat[y][x] = right;
             }
     }
 
     // Left seam
     private int cl(int y, int x) {
+        if (x < 0 || x >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]) + Math.abs(grayArr[y - 1][x] - grayArr[y][x - 1]);
     }
 
     // Right seam
     private int cr(int y, int x) {
+        if (x < 0 || x >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]) + Math.abs(grayArr[y - 1][x] - grayArr[y][x + 1]);
     }
 
     // Vertical seam
     private int cv(int y, int x) {
+        if (x < 0 || x >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]);
     }
 

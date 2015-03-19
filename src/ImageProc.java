@@ -85,7 +85,20 @@ public class ImageProc {
 
     public static BufferedImage retargetSize(BufferedImage img, int width, int height) {
         //TODO implement this
-        return null;
+        if (width == img.getWidth() && height == img.getHeight()) return img;
+        if (width < 1 || height < 1 || width > 2 * img.getWidth() || height > 2 * img.getHeight()) {
+            System.out.println("newSize is off limits.\nreturns original.");
+            return img;
+        }
+
+        BufferedImage current = img;
+        if (width != img.getWidth())
+            current = new Retargeter(current, false).retarget(width);
+
+        if (height != img.getHeight())
+            current = new Retargeter(current, true).retarget(height);
+
+        return current;
     }
 
 
