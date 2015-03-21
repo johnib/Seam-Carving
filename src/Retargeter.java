@@ -182,20 +182,4 @@ public class Retargeter {
         if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]);
     }
-
-//    // gets the index of the i'th seam to be removed or duplicated.
-//    private void shiftPic(int i) {
-//        if (i > width || i < 1) {
-//            System.out.println("shiftPic received wrong seam index.\nreturns.");
-//            return;
-//        }
-//
-//        BufferedImage out = new BufferedImage(width - 1, height, origPic.getType());
-//        for (int y = 0; y < height; y++)
-//            for (int x = 0; x < width; x++) {
-//                if (seamsMat[y][x] != i) {
-//                    out.setRGB(x, y, origPic.getRGB(x, y));
-//                }
-//            }
-//    }
 }

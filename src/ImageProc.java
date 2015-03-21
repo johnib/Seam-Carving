@@ -62,23 +62,29 @@ public class ImageProc {
     }
 
     public static BufferedImage gradientMagnitude(BufferedImage img) {
-        int width = img.getWidth();
-        int height = img.getHeight();
+        int width = img.getWidth(), height = img.getHeight(), max = 1, mapped;
+        int[][] gradient = new int[height][width];
         BufferedImage out = new BufferedImage(width, height, img.getType());
         BufferedImage gray = grayScale(img);
+
+        for (int y = 1; y < height - 1; y++) {
+            gradient[y][0] = 0;
+            gradient[y][width - 1] = 0;
+        }
 
         for (int x = 1; x < width - 1; x++)
             for (int y = 1; y < height - 1; y++) {
                 int dx = (gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF);
                 int dy = (gray.getRGB(x, y - 1) & 0xFF) - (gray.getRGB(x, y + 1) & 0xFF);
-                int norma = Math.min((int) Math.sqrt(dx * dx + dy * dy), 255);
-                out.setRGB(x, y, new Color(norma, norma, norma).getRGB());
+                gradient[y][x] = (int) Math.sqrt(dx * dx + dy * dy);
+                if (max < gradient[y][x]) max = gradient[y][x];
             }
 
-        for (int y = 1; y < height - 1; y++) {
-            out.setRGB(0, y, new Color(0, 0, 0).getRGB());
-            out.setRGB(width - 1, y, new Color(0, 0, 0).getRGB());
-        }
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++) {
+                mapped = gradient[y][x] * 255 / max;
+                out.setRGB(x, y, new Color(mapped, mapped, mapped).getRGB());
+            }
 
         return out;
     }
