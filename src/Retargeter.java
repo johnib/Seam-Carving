@@ -6,11 +6,10 @@ import java.awt.image.BufferedImage;
  *
  * 1. Set parameters, transpose the picture if needed (when not vertical).
  * 2. Calculate the gray scaled image.
- * 3. Repeat k times:
+ * 3. Repeat from 1 to k :
  *  a. Calculate cost matrix.
- *  b. Set the seam's pixels to k in the seamsMat
- *  c. Update the used pixels to high value in the gray scacle
- *      (this way they won't be picked up again on next seams).
+ *  b. Set the seam's pixels to k in the seamsMat.
+ *  c. Shift gray scaled picture 1 pixel left (overwrite the seam).
  * 4. Cut or duplicate the k seams.
  * 5. return retargeted picture.
  */
@@ -23,17 +22,17 @@ public class Retargeter {
     /* both width and height are of the origPic */
     private final int width;
     private final int height;
-
     private final boolean isVertical;
-    private final BufferedImage gray; // gray scaled image
-    private final int[][] grayArr; // array of gray scaled values
-    private final int[][] seamsMat; // seams order matrix
-    private int[][] costMat; // cost matrix
 
-    private static int HIGH_VALUE = Integer.MAX_VALUE >> 1;
+    private int[][] grayArr; // array of gray scaled values
+    private int grayWidth;
+
+    private int[][] costMat; // cost matrix
+    private final int[][] seamsMat; // seams order matrix
+
+    private static int HIGH_VALUE = Integer.MAX_VALUE >> 6;
 
     public Retargeter(BufferedImage m_img, boolean m_isVertical) {
-        //TODO do initialization and pre processing here
         isVertical = m_isVertical;
         if (isVertical)
             origPic = ImageProc.transpose(m_img).getSubimage(0, 0, m_img.getHeight(), m_img.getWidth());
@@ -42,7 +41,8 @@ public class Retargeter {
 
         width = origPic.getWidth();
         height = origPic.getHeight();
-        gray = ImageProc.grayScale(m_img);
+        grayWidth = width;
+        BufferedImage gray = ImageProc.grayScale(origPic);
         grayArr = new int[height][width];
         seamsMat = new int[height][width];
         for (int y = 0; y < height; y++)
@@ -50,18 +50,6 @@ public class Retargeter {
                 grayArr[y][x] = gray.getRGB(x, y) & 0xFF;
                 seamsMat[y][x] = 0;
             }
-
-        /*
-        one-time allocating space for this matrix instead of
-        reallocating k times (for k seams).
-         */
-        costMat = new int[height][width + 2];
-
-        // wrap shoulders with high value
-        for (int y = 0; y < height; y++) {
-            costMat[y][0] = HIGH_VALUE;
-            costMat[y][width + 1] = HIGH_VALUE;
-        }
     }
 
     public int[][] getSeamsOrderMatrix() {
@@ -80,27 +68,28 @@ public class Retargeter {
      * 3. create new BufferedImage with the new size (wider/shorter).
      * 4. for each pixel in the original picture:
      *  4.1 if its seamsMat value == 0 copy it to the picture.
-     *  4.2 else copy it twice and increase offset.
+     *  4.2 else double/don't copy it increase offset.
+     *
      * @param newSize the wanted new width of the picture. oldSize - newSize = k seams.
      * @return new re-sized BufferedImage
      */
     public BufferedImage retarget(int newSize) {
         int k = newSize - width;
-        calculateSeamsOrderMatrix(Math.abs(k));
+        calculateSeamsOrderMatrix(Math.abs(k)); // process order matrix
 
-        // from now on i assume that SeamsOrderMatrix is valid
         BufferedImage out = new BufferedImage(width + k, height, origPic.getType());
         int offset;
         for (int y = 0; y < height; y++) {
             offset = 0;
             for (int x = 0; x < width; x++) {
+                System.out.println("x: " + x + "\ty: " + y + "\toffset: " + offset + "\tval: " + seamsMat[y][x]);
                 if (seamsMat[y][x] == 0) // pixel not in seam
                     out.setRGB(x + offset, y, origPic.getRGB(x, y));
                 else {
                     if (k > 0) { // duplicate seam
                         out.setRGB(x + offset++, y, origPic.getRGB(x, y));
                         out.setRGB(x + offset, y, origPic.getRGB(x, y));
-                    } else // remove seam
+                    } else // or remove seam
                         offset--;
                 }
             }
@@ -109,51 +98,51 @@ public class Retargeter {
     }
 
     private void calculateSeamsOrderMatrix(int k) {
-        //TODO implement this - this calculates the order in which seams are extracted
-        int x, y, min, tempX;
+        int x, y, min, left, mid, right;
         for (int i = 1; i <= k; i++) {
-            // calculate the cost matrix
             calculateCostsMatrix();
 
             // find min seam's end-pixel coordinate
-            x = 0; y = height - 1; min = costMat[y][x];
-            for (int j = 0; j < width; j++)
-                if (min > costMat[y][j]) {
+            x = 1; y = height - 1; min = costMat[y][x];
+            for (int j = 1; j <= grayWidth; j++)
+                if (min > costMat[y][j] && seamsMat[y][j - 1] == 0) {
                     x = j;
                     min = costMat[y][j];
                 }
 
             // mark whole seam in seams matrix
             for (; y > 0; y--) {
-                seamsMat[y][x] = i;
-                tempX = (costMat[y - 1][x - 1] < costMat[y - 1][x]) ? x - 1 : x;
-                tempX = (costMat[y - 1][x + 1] < costMat[y - 1][tempX]) ? x + 1 : tempX;
-                x = tempX;
-
-                // 'disable' the seam's pixels
-                grayArr[y][x] = HIGH_VALUE;
+                seamsMat[y][x - 1] = i;
+                left = costMat[y - 1][x - 1] + cl(y, x - 1);
+                mid = costMat[y - 1][x] + cv(y, x - 1);
+                right = costMat[y - 1][x + 1] + cl(y, x - 1);
+                if (left <= mid && left <= right)
+                    x--;
+                else if (right <= mid && right <= left)
+                    x++;
             }
-            seamsMat[y][x] = i; // do the same for the last pixel
-            grayArr[y][x] = HIGH_VALUE;
+            seamsMat[y][x - 1] = i; // do the same for the last pixel
+            grayArr = shift(1); // remove the marked seam
         }
+
     }
 
     private void calculateCostsMatrix() {
-        //TODO implement this - cost matrix should be calculated for a given image width w
-//        //TODO avoid allocating memory for the costMat.
-//        costMat = new int[height][width + 2];
-        //TODO change to gradient pixels.
-        // copy first line of grayScaled to the costMat.
-        System.arraycopy(grayArr[0], 0, costMat[0], 1, width);
+        costMat = new int[height][grayWidth + 2];
+        costMat[0][1] = 1000;
+        costMat[0][grayWidth] = 1000;
+        BufferedImage gradient = ImageProc.gradientMagnitude(origPic);
+        for (int x = 2; x < grayWidth; x++) {
+            costMat[0][x] = gradient.getRGB(x, 0) & 0xFF;
+        }
 
         int left, mid, right;
         for (int y = 1; y < height; y++)
-            for (int x = 1; x <= width; x++) {
+            for (int x = 1; x <= grayWidth; x++) {
                 // assign
-                System.out.println("x: " + x + "\ty: " + y);
-                left = costMat[y][x - 1] + cl(y, x - 1);
-                mid = costMat[y][x] + cv(y, x - 1);
-                right = costMat[y][x + 1] + cr(y, x - 1);
+                left = costMat[y - 1][x - 1] + cl(y, x - 1);
+                mid = costMat[y - 1][x] + cv(y, x - 1);
+                right = costMat[y - 1][x + 1] + cr(y, x - 1);
 
                 // check for minimum
                 if (left <= mid && left <= right)
@@ -163,23 +152,53 @@ public class Retargeter {
                 else
                     costMat[y][x] = right;
             }
+
+        //TODO REMOVE
+        System.out.println("Calculate cost matrix");
+        for (int hh = 0; hh < height; hh++) {
+            System.out.print("{ ");
+            for (int xx = 0; xx < grayWidth; xx++) {
+                System.out.printf("%3d\t", costMat[hh][xx]);
+            }
+            System.out.println("}");
+        }
     }
 
     // Left seam
     private int cl(int y, int x) {
-        if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
+        if (x == 0 || x + 1 >= grayWidth) return HIGH_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]) + Math.abs(grayArr[y - 1][x] - grayArr[y][x - 1]);
     }
 
     // Right seam
     private int cr(int y, int x) {
-        if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
+        if (x == 0 || x + 1 >= grayWidth) return HIGH_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]) + Math.abs(grayArr[y - 1][x] - grayArr[y][x + 1]);
     }
 
     // Vertical seam
     private int cv(int y, int x) {
-        if (x == 0 || x + 1 >= width) return Integer.MAX_VALUE;
+        if (x == 0 || x + 1 >= grayWidth) return HIGH_VALUE;
         return Math.abs(grayArr[y][x + 1] - grayArr[y][x - 1]);
+    }
+
+    /**
+     * This method shifts the picture one pixel right overwriting the marked pixel.
+     * @param k amount of pixels to be shifted right.
+     * @return an array representing the resized gray scaled image.
+     */
+    private int[][] shift(int k) {
+        int[][] shifted = new int[height][grayArr[0].length - k];
+        int offset = 0;
+        for (int y = 0; y < height; y++) {
+            offset = 0;
+            for (int x = 0; x < grayWidth; x++)
+                if (seamsMat[y][x] == 0)
+                    shifted[y][x + offset] = grayArr[y][x];
+                else
+                    offset--;
+        }
+        grayWidth--;
+        return shifted;
     }
 }

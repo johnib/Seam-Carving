@@ -80,6 +80,7 @@ public class ImageProc {
                 if (max < gradient[y][x]) max = gradient[y][x];
             }
 
+        // map the values to [0,255]
         for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++) {
                 mapped = gradient[y][x] * 255 / max;
