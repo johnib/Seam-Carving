@@ -1,5 +1,7 @@
-/*
- * This class defines some static methods of image processing.
+/**
+ * Computer Graphics - IDC
+ * Assignment 1 - Seam Carving
+ * This project has been implemented by Jonathan Yaniv ONLY.
  */
 
 import java.awt.Color;
@@ -91,7 +93,6 @@ public class ImageProc {
     }
 
     public static BufferedImage retargetSize(BufferedImage img, int width, int height) {
-        //TODO implement this
         if (width == img.getWidth() && height == img.getHeight()) return img;
         if (width < 1 || height < 1 || width > 2 * img.getWidth() || height > 2 * img.getHeight()) {
             System.out.println("newSize is off limits.\nreturns original.");
@@ -110,8 +111,36 @@ public class ImageProc {
 
 
     public static BufferedImage showSeams(BufferedImage img, int width, int height) {
-        //TODO implement this
-        return null;
+        if (width == img.getWidth() && height == img.getHeight()) return img;
+        if (width < 1 || height < 1 || width > 2 * img.getWidth() || height > 2 * img.getHeight()) {
+            System.out.println("newSize is off limits.\nreturns original.");
+            return img;
+        }
+
+        int[][] seams;
+        int orig_w = img.getWidth(), orig_h = img.getHeight();
+        BufferedImage out = img.getSubimage(0, 0, orig_w, orig_h);
+        Retargeter retargeter;
+        if (width != orig_w) {
+            retargeter = new Retargeter(img, false);
+            retargeter.retarget(width);
+            seams = retargeter.getSeamsOrderMatrix();
+            for (int x = 0; x < orig_w; x++)
+                for (int y = 0; y < orig_h; y++)
+                    if (seams[y][x] != 0)
+                        out.setRGB(x, y, new Color(255, 0, 0).getRGB());
+        }
+
+        if (height != orig_h) {
+            retargeter = new Retargeter(img, true);
+            retargeter.retarget(height);
+            seams = transpose(retargeter.getSeamsOrderMatrix());
+            for (int x = 0; x < orig_w; x++)
+                for (int y = 0; y < orig_h; y++)
+                    if (seams[y][x] != 0)
+                        out.setRGB(x, y, new Color(0, 212, 0).getRGB());
+        }
+        return out;
 
     }
 
@@ -120,6 +149,15 @@ public class ImageProc {
         for (int x = 0; x < img.getWidth(); x++)
             for (int y = 0; y < img.getHeight(); y++)
                 out.setRGB(y, x, img.getRGB(x, y));
+
+        return out;
+    }
+
+    static int[][] transpose(int[][] arr) {
+        int[][] out = new int[arr[0].length][arr.length];
+        for (int x = 0; x < arr.length; x++)
+            for (int y = 0; y < arr[0].length; y++)
+                out[y][x] = arr[x][y];
 
         return out;
     }

@@ -1,6 +1,9 @@
-import java.awt.image.BufferedImage;
-
 /**
+ * Computer Graphics - IDC
+ * Assignment 1 - Seam Carving
+ * This project has been implemented by Jonathan Yaniv ONLY.
+ *
+ *
  * This class is implemented a bit different, with slightly different signatures.
  * The procedure from creating a new Retargeter to return the retargeted image is as follows:
  *
@@ -14,6 +17,7 @@ import java.awt.image.BufferedImage;
  * 5. return retargeted picture.
  */
 
+import java.awt.image.BufferedImage;
 public class Retargeter {
 
     /* this is the input image, transposed if m_isVertical */
@@ -56,9 +60,9 @@ public class Retargeter {
         return seamsMat;
     }
 
-    public void getOrigPosMatrix() {
-        //you can implement this (change the output type)
-    }
+//    public void getOrigPosMatrix() {
+//        //you can implement this (change the output type)
+//    }
 
     /**
      * This function is the actual size changer.
@@ -82,7 +86,8 @@ public class Retargeter {
         for (int y = 0; y < height; y++) {
             offset = 0;
             for (int x = 0; x < width; x++) {
-                System.out.println("x: " + x + "\ty: " + y + "\toffset: " + offset + "\tval: " + seamsMat[y][x]);
+                //TODO REMOVE
+//                System.out.println("x: " + x + "\ty: " + y + "\toffset: " + offset + "\tval: " + seamsMat[y][x]);
                 if (seamsMat[y][x] == 0) // pixel not in seam
                     out.setRGB(x + offset, y, origPic.getRGB(x, y));
                 else {
@@ -123,6 +128,14 @@ public class Retargeter {
             }
             seamsMat[y][x - 1] = i; // do the same for the last pixel
             grayArr = shift(1); // remove the marked seam
+
+//            //TODO REMOVE
+//            for (int hh = 0; hh < height; hh++) {
+//                System.out.print("{ ");
+//                for (int xx = 0; xx < width; xx++)
+//                    System.out.printf("%3d\t", seamsMat[hh][xx]);
+//                System.out.println("}");
+//            }
         }
 
     }
@@ -153,15 +166,15 @@ public class Retargeter {
                     costMat[y][x] = right;
             }
 
-        //TODO REMOVE
-        System.out.println("Calculate cost matrix");
-        for (int hh = 0; hh < height; hh++) {
-            System.out.print("{ ");
-            for (int xx = 0; xx < grayWidth; xx++) {
-                System.out.printf("%3d\t", costMat[hh][xx]);
-            }
-            System.out.println("}");
-        }
+//        //TODO REMOVE
+//        System.out.println("Calculate cost matrix");
+//        for (int hh = 0; hh < height; hh++) {
+//            System.out.print("{ ");
+//            for (int xx = 0; xx < grayWidth; xx++) {
+//                System.out.printf("%3d\t", costMat[hh][xx]);
+//            }
+//            System.out.println("}");
+//        }
     }
 
     // Left seam
@@ -185,11 +198,11 @@ public class Retargeter {
     /**
      * This method shifts the picture one pixel right overwriting the marked pixel.
      * @param k amount of pixels to be shifted right.
-     * @return an array representing the resized gray scaled image.
+     * @return an array representing the re-sized gray scaled image.
      */
     private int[][] shift(int k) {
         int[][] shifted = new int[height][grayArr[0].length - k];
-        int offset = 0;
+        int offset;
         for (int y = 0; y < height; y++) {
             offset = 0;
             for (int x = 0; x < grayWidth; x++)
