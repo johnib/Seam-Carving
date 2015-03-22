@@ -22,8 +22,7 @@ public class ImageProc {
     }
 
     public static BufferedImage grayScale(BufferedImage img) {
-        int width = img.getWidth();
-        int height = img.getHeight();
+        int width = img.getWidth(), height = img.getHeight();
         BufferedImage out = new BufferedImage(width, height, img.getType());
         for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
@@ -31,7 +30,7 @@ public class ImageProc {
         return out;
     }
 
-    // returns the gray color of a given pixel's RGB value.
+    // returns the gray color of a given pixel's RGB value by calculating the avg.
     private static int getGray(int rgb) {
         Color px = new Color(rgb);
         int avg = (px.getRed() + px.getGreen() + px.getBlue()) / 3;
@@ -39,14 +38,13 @@ public class ImageProc {
     }
 
     public static BufferedImage horizontalDerivative(BufferedImage img) {
-        int width = img.getWidth();
-        int height = img.getHeight();
+        int width = img.getWidth(), height = img.getHeight(), dx;
         BufferedImage out = new BufferedImage(width, height, img.getType());
         BufferedImage gray = grayScale(img);
 
         for (int x = 1; x < width - 1; x++)
-            for (int y = 0; y < height; y++) { // calc dx as discretely as defined.
-                int dx = ((gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF) + 255) / 2;
+            for (int y = 0; y < height; y++) { // calc dx discretely as defined.
+                dx = ((gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF) + 255) / 2;
                 out.setRGB(x, y, new Color(dx, dx, dx).getRGB());
             }
 
@@ -64,7 +62,7 @@ public class ImageProc {
     }
 
     public static BufferedImage gradientMagnitude(BufferedImage img) {
-        int width = img.getWidth(), height = img.getHeight(), max = 1, mapped;
+        int width = img.getWidth(), height = img.getHeight(), max = 1, mapped, dx, dy;
         int[][] gradient = new int[height][width];
         BufferedImage out = new BufferedImage(width, height, img.getType());
         BufferedImage gray = grayScale(img);
@@ -76,8 +74,8 @@ public class ImageProc {
 
         for (int x = 1; x < width - 1; x++)
             for (int y = 1; y < height - 1; y++) {
-                int dx = (gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF);
-                int dy = (gray.getRGB(x, y - 1) & 0xFF) - (gray.getRGB(x, y + 1) & 0xFF);
+                dx = (gray.getRGB(x - 1, y) & 0xFF) - (gray.getRGB(x + 1, y) & 0xFF);
+                dy = (gray.getRGB(x, y - 1) & 0xFF) - (gray.getRGB(x, y + 1) & 0xFF);
                 gradient[y][x] = (int) Math.sqrt(dx * dx + dy * dy);
                 if (max < gradient[y][x]) max = gradient[y][x];
             }

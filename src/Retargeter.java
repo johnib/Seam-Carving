@@ -17,6 +17,14 @@
  * 5. return retargeted picture.
  */
 
+/**
+ * Important notes:
+ *
+ * I could not fix the bug where one seams overwrites another in the seamsMatrix.
+ * Thus the retargeter will work fine for few seams, depending on the image and the seams location.
+ * That is a bug that I could not fix on time, still the project behaves as expected (concept wise).
+ */
+
 import java.awt.image.BufferedImage;
 public class Retargeter {
 
@@ -60,10 +68,6 @@ public class Retargeter {
         return seamsMat;
     }
 
-//    public void getOrigPosMatrix() {
-//        //you can implement this (change the output type)
-//    }
-
     /**
      * This function is the actual size changer.
      * The procedure goes like this:
@@ -86,8 +90,6 @@ public class Retargeter {
         for (int y = 0; y < height; y++) {
             offset = 0;
             for (int x = 0; x < width; x++) {
-                //TODO REMOVE
-//                System.out.println("x: " + x + "\ty: " + y + "\toffset: " + offset + "\tval: " + seamsMat[y][x]);
                 if (seamsMat[y][x] == 0) // pixel not in seam
                     out.setRGB(x + offset, y, origPic.getRGB(x, y));
                 else {
@@ -128,14 +130,6 @@ public class Retargeter {
             }
             seamsMat[y][x - 1] = i; // do the same for the last pixel
             grayArr = shift(1); // remove the marked seam
-
-//            //TODO REMOVE
-//            for (int hh = 0; hh < height; hh++) {
-//                System.out.print("{ ");
-//                for (int xx = 0; xx < width; xx++)
-//                    System.out.printf("%3d\t", seamsMat[hh][xx]);
-//                System.out.println("}");
-//            }
         }
 
     }
@@ -144,11 +138,19 @@ public class Retargeter {
         costMat = new int[height][grayWidth + 2];
         costMat[0][1] = 1000;
         costMat[0][grayWidth] = 1000;
-        BufferedImage gradient = ImageProc.gradientMagnitude(origPic);
-        for (int x = 2; x < grayWidth; x++) {
-            costMat[0][x] = gradient.getRGB(x, 0) & 0xFF;
+
+        // calculate gradient values for the first line (base case)
+        int offset = 0, dx, dy;
+        for (int x = 1; x < grayWidth - 1; x++) {
+            if (seamsMat[0][x] == 0) {
+                dx = grayArr[0][x - 1] - grayArr[0][x + 1];
+                dy = grayArr[0][x] - grayArr[0][x + 1];
+                costMat[0][x + 1 + offset] = Math.abs(dx) + Math.abs(dy);
+            } else
+                offset--;
         }
 
+        // dynamic programming part
         int left, mid, right;
         for (int y = 1; y < height; y++)
             for (int x = 1; x <= grayWidth; x++) {
@@ -165,16 +167,6 @@ public class Retargeter {
                 else
                     costMat[y][x] = right;
             }
-
-//        //TODO REMOVE
-//        System.out.println("Calculate cost matrix");
-//        for (int hh = 0; hh < height; hh++) {
-//            System.out.print("{ ");
-//            for (int xx = 0; xx < grayWidth; xx++) {
-//                System.out.printf("%3d\t", costMat[hh][xx]);
-//            }
-//            System.out.println("}");
-//        }
     }
 
     // Left seam
