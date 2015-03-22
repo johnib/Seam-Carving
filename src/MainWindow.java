@@ -174,18 +174,18 @@ public class MainWindow extends JFrame {
 				int width = (Integer)txtRetargetWidth.getValue();
 				int height = (Integer)txtRetargetHeight.getValue();
 				BufferedImage bckupimg=MainWindow.this.img;//save image without colored seams 
-				try {
+//				try {
 					BufferedImage img = ImageProc.showSeams(MainWindow.this.img, width, height);					
 					MainWindow.this.img = img;
 					present("ShowSeams(w=[" + width + "])(h=[" + height + "])");
 					MainWindow.this.img=bckupimg;//return to image without colored seams 
-				} catch (Exception ex) {
-					String errormsg=ex.getMessage();
-					if (errormsg==null)
-						errormsg="Error Showing Seams, check the parameters!";	
-					JOptionPane.showMessageDialog(MainWindow.this, errormsg, "Error", JOptionPane.ERROR_MESSAGE);
-					MainWindow.this.img=bckupimg;
-				}
+//				} catch (Exception ex) {
+//					String errormsg=ex.getMessage();
+//					if (errormsg==null)
+//						errormsg="Error Showing Seams, check the parameters!";
+//					JOptionPane.showMessageDialog(MainWindow.this, errormsg, "Error", JOptionPane.ERROR_MESSAGE);
+//					MainWindow.this.img=bckupimg;
+//				}
 			}
 		});
 		btnShowSeams.setEnabled(false);
