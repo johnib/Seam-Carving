@@ -40,9 +40,9 @@ public class Retargeter {
     private int[][] grayArr; // array of gray scaled values
     private int grayWidth;
 
+    private int[][] origPos; // will keep for each index its column index
     private int[][] costMat; // cost matrix
     private final int[][] seamsMat; // seams order matrix
-    private int[][] origPos; // will keep for each index its column index
 
     private static int HIGH_VALUE = Integer.MAX_VALUE >> 6;
 
@@ -87,8 +87,7 @@ public class Retargeter {
      */
     public BufferedImage retarget(int newSize) {
         int k = newSize - width;
-        calculateSeamsOrderMatrix(Math.abs(k)); // process order matrix
-
+        calculateSeamsOrderMatrix(Math.abs(k)); // process seams order matrix
         BufferedImage out = new BufferedImage(width + k, height, origPic.getType());
         int offset;
         for (int y = 0; y < height; y++) {
@@ -112,8 +111,7 @@ public class Retargeter {
         for (int i = 1; i <= k; i++) {
             int x = 1, y = height - 1, min = HIGH_VALUE, left, mid, right, realX;
             calculateCostsMatrix();
-            print(grayArr);
-            print(costMat);
+
             // find min at bottom line
             for (int j = 1; j < costMat[y].length - 1; j++)
                 if (costMat[y][j] < min) {
@@ -129,13 +127,15 @@ public class Retargeter {
                 left = costMat[y - 1][x - 1] + cl(y, x - 1);
                 mid = costMat[y - 1][x] + cv(y, x - 1);
                 right = costMat[y - 1][x + 1] + cl(y, x - 1);
+
+                // remove from gray array and origPos matrix
                 grayArr[y] = shift(grayArr[y], x - 1);
                 origPos[y] = shift(origPos[y], x - 1);
+
                 if (left <= mid && left <= right)
                     x--;
                 else if (right <= mid && right <= left)
                     x++;
-                // remove from gray array and original position matrix
             }
             // do the same for the last pixel
             realX = origPos[y][x - 1];
@@ -143,37 +143,7 @@ public class Retargeter {
             grayArr[y] = shift(grayArr[y], x - 1);
             origPos[y] = shift(origPos[y], x - 1);
             grayWidth--;
-            print(grayArr);
-            print(origPos);
-            print(seamsMat);
-
-//            // find min seam's end-pixel coordinate
-//            x = 1;
-//            y = height - 1;
-//            min = costMat[y][x];
-//            for (int j = 1; j <= grayWidth; j++)
-//                if (min > costMat[y][j] && seamsMat[y][j - 1] == 0) {
-//                    x = j;
-//                    min = costMat[y][j];
-//                }
-//
-//            // mark whole seam in seams matrix
-//            for (; y > 0; y--) {
-//                seamsMat[y][x - 1] = i;
-//                left = costMat[y - 1][x - 1] + cl(y, x - 1);
-//                mid = costMat[y - 1][x] + cv(y, x - 1);
-//                right = costMat[y - 1][x + 1] + cl(y, x - 1);
-//                if (left <= mid && left <= right)
-//                    x--;
-//                else if (right <= mid && right <= left)
-//                    x++;
-//            }
-//            seamsMat[y][x - 1] = i; // do the same for the last pixel
-//            grayArr = shift(1); // remove the marked seam
-//        }
-
         }
-
     }
 
     private void calculateCostsMatrix() {
@@ -230,27 +200,6 @@ public class Retargeter {
     }
 
     /**
-     * This method shifts the picture one pixel right overwriting the marked pixel.
-     *
-     * @param k amount of pixels to be shifted right.
-     * @return an array representing the re-sized gray scaled image.
-     */
-    private int[][] shift(int k) {
-        int[][] shifted = new int[height][grayArr[0].length - k];
-        int offset;
-        for (int y = 0; y < height; y++) {
-            offset = 0;
-            for (int x = 0; x < grayWidth; x++)
-                if (seamsMat[y][x] == 0)
-                    shifted[y][x + offset] = grayArr[y][x];
-                else
-                    offset--;
-        }
-        grayWidth--;
-        return shifted;
-    }
-
-    /**
      * Returns a new array without the given pixel.
      *
      * @param src the source array (line in the picture)
@@ -266,13 +215,5 @@ public class Retargeter {
             else
                 offset--;
         return shifted;
-    }
-
-    private static void print(int[][] arr) {
-//        for (int y = 0; y < arr.length; y++) {
-//            System.out.print("\n{ ");
-//            for (int x = 0; x < arr[y].length; x++)
-//                System.out.printf("%3d ", arr[y][x]);
-//        }
     }
 }
