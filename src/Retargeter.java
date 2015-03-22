@@ -26,6 +26,7 @@
  */
 
 import java.awt.image.BufferedImage;
+
 public class Retargeter {
 
     /* this is the input image, transposed if m_isVertical */
@@ -75,8 +76,8 @@ public class Retargeter {
      * 2. calculate Seams Order Matrix, given the new size.
      * 3. create new BufferedImage with the new size (wider/shorter).
      * 4. for each pixel in the original picture:
-     *  4.1 if its seamsMat value == 0 copy it to the picture.
-     *  4.2 else double/don't copy it increase offset.
+     * 4.1 if its seamsMat value == 0 copy it to the picture.
+     * 4.2 else double/don't copy it increase offset.
      *
      * @param newSize the wanted new width of the picture. oldSize - newSize = k seams.
      * @return new re-sized BufferedImage
@@ -110,7 +111,9 @@ public class Retargeter {
             calculateCostsMatrix();
 
             // find min seam's end-pixel coordinate
-            x = 1; y = height - 1; min = costMat[y][x];
+            x = 1;
+            y = height - 1;
+            min = costMat[y][x];
             for (int j = 1; j <= grayWidth; j++)
                 if (min > costMat[y][j] && seamsMat[y][j - 1] == 0) {
                     x = j;
@@ -189,6 +192,7 @@ public class Retargeter {
 
     /**
      * This method shifts the picture one pixel right overwriting the marked pixel.
+     *
      * @param k amount of pixels to be shifted right.
      * @return an array representing the re-sized gray scaled image.
      */
